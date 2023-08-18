@@ -1,8 +1,8 @@
-<app-header></app-header>
-<div class="map-container" *ngIf="batteries?.length && !selectedBattery">
+
+<div class="map-container" >
     <app-map [batteries]="batteries" (batterySelectionEmitter)="updateBatteryData($event)" (mapCreationEmitter)="showSpinner = !$event"></app-map>
 </div>
-<div class="dashboard-container" *ngIf="selectedBattery && battery">
+<div class="dashboard-container" >
     <div class="battery-info-container">
         <app-breadcrumb [text]="'Battery Digital Twin'" [clickHandler]="reset()"></app-breadcrumb>
         <div class="battery-pack-info">
@@ -129,7 +129,7 @@
                     </div>
                     <div class="fault-detection">
                         <h4 style="display: flex; justify-content: space-between"><span>Fault Detection</span>
-<!--                            <button class="upload-action-secondary" style="width: auto; font-size: 10px; height: 30px; border-radius: 14px;">Thermal</button>-->
+                    <!-- <button class="upload-action-secondary" style="width: auto; font-size: 10px; height: 30px; border-radius: 14px;">Thermal</button>-->
                         </h4>
                         <div class="highchart-groups">
                             <highcharts-chart [options]="gaugeOptions" [Highcharts]="highcharts" [callbackFunction]="temperatureChartCallback"
@@ -194,5 +194,4 @@
         </div>
     </div>
 </div>
-<app-footer></app-footer>
 <app-spinner [displayText]="displayText" *ngIf="showSpinner"></app-spinner>

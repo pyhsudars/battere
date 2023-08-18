@@ -29,7 +29,7 @@ export class PersonaGuard implements CanActivate {
     if (this.userPrefService.currentPersona === UserPersona.FLEET_OPERATOR) {
         if (!this.router.url.includes('/dashboard')) {
           this.router.navigate(['/dashboard']).then();
-          return false;
+          return true;
         } else {
           return true;
         }

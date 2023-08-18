@@ -14,13 +14,24 @@
  */
 
 import { Injectable } from "@angular/core";
-import { HttpRequest, HttpHandler, HttpEvent, HttpInterceptor } from "@angular/common/http";
+import { HttpRequest, HttpHandler, HttpEvent, HttpInterceptor, HttpEventType, HttpResponse } from "@angular/common/http";
 import { Observable } from "rxjs";
 import { AuthService } from "../services/auth.service";
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
     constructor(private authService: AuthService) {}
+    
+    responseData: unknown = { message: 'Data received successfuly' };
+
+    //creating an instance of HttpResponseUnknown
+    response= new HttpResponse<unknown>({
+        body: this.responseData,
+        status: 200,
+        statusText: 'OK'
+    });
+
+
 
     intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
         if (request.url.includes("/api/") && !request.url.includes("/api/amplify-config")) {
@@ -31,7 +42,12 @@ export class AuthInterceptor implements HttpInterceptor {
             });
             return next.handle(cloneRequest);
         } else {
-            return next.handle(request);
+            console.log("hi");
+            return new Observable( observer => {
+                observer.next()
+                observer.complete()
+            });      
+       
         }
     }
 }

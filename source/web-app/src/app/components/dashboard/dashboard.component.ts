@@ -26,6 +26,10 @@ import SolidGauge from 'highcharts/modules/solid-gauge';
 import HC_more from "highcharts/highcharts-more";
 import {Auth} from "aws-amplify";
 
+import { HttpClient } from '@angular/common/http';
+import { log } from 'console';
+import * as jsonData from '../connected-batteries.json';
+
 AnnotationsModule(Highcharts);
 HC_more(Highcharts);
 SolidGauge(Highcharts);
@@ -38,10 +42,10 @@ SolidGauge(Highcharts);
 export class DashboardComponent implements OnInit {
     pipelineId: any;
     pipelineData: GetPipelineByIdQuery | undefined;
-    showSpinner = true;
+    showSpinner = false;
     startedStream: any;
     batteryMetadata: any;
-    batteries: string[] = [];
+    batteries: any;
     modules: string[] = [];
     battery: any;
     popout = false;
@@ -57,6 +61,8 @@ export class DashboardComponent implements OnInit {
     faPause = faCirclePause;
     username: any;
     drift = 0;
+    dataJi:any;
+    batteryNames:string[] = [];
     private streamingInterval: any;
     private sohData: any[] = [];
     private futureSOHData: any[] = [];
@@ -337,7 +343,9 @@ export class DashboardComponent implements OnInit {
     constructor(private apiService: APIService,
                 private dataService: DataService,
                 private activatedRoute: ActivatedRoute,
-                private router: Router) {
+                private router: Router,
+                private http: HttpClient,
+                ) {
         this.activatedRoute.queryParams.subscribe((params: any) => {
             if (params.uuid) {
                 this.pipelineId = params.uuid;
@@ -347,8 +355,9 @@ export class DashboardComponent implements OnInit {
 
     ngOnInit(): void {
         Auth.currentUserInfo().then(user => {
-            this.username = user.username.split('@')[0];
-            if (!this.pipelineId) {
+            this.username = "uday.singh";
+            if (this.pipelineId) {
+                console.log("if")
                 this.apiService.GetPipelinesByUser(this.username).then((pipelines: GetPipelinesByUserQuery[]) => {
                     this.pipelineData = pipelines.filter((pipeline: GetPipelinesByUserQuery) => pipeline.PipelineStatus === 'PIPELINE_FINISHED')
                         .sort((pipeline1: GetPipelinesByUserQuery, pipeline2: GetPipelinesByUserQuery) => new Date(pipeline1.StatusUpdatedAt).getTime() - new Date(pipeline2.StatusUpdatedAt).getTime())
@@ -364,10 +373,14 @@ export class DashboardComponent implements OnInit {
                     }
                 });
             } else {
-                this.dataService.getMetadata(this.username, this.pipelineId).subscribe((metadata: any) => {
-                    this.batteryMetadata = JSON.parse(metadata);
-                    this.batteries = Object.keys(this.batteryMetadata);
-                });
+    this.dataJi = jsonData;
+    this.batteryMetadata = this.dataJi;
+    this.batteries = this.batteryMetadata.default;
+    this.batteryNames=Object.keys(this.batteryMetadata);
+    const firstVal = this.batteryNames[0];
+    this.battery = this.batteries[firstVal];
+    console.log(this.battery);
+    this.updateBatteryData(this.battery);
             }
         });
     }
@@ -430,34 +443,30 @@ export class DashboardComponent implements OnInit {
     }
 
     updateBatteryData(batteryInfo: any) {
-        this.displayText = 'Loading Dashboard...';
-        this.showSpinner = true;
-        this.selectedBattery = batteryInfo.BatteryId;
-        this.battery = this.batteryMetadata[this.selectedBattery];
         this.modules = new Array(this.battery.numberOfModules);
         this.resetBatteryInfo();
-        const observables = [
-            this.dataService.getBatteryData(this.username, this.pipelineId, this.selectedBattery, 'past'),
-            this.dataService.getBatteryData(this.username, this.pipelineId, this.selectedBattery, 'predictions'),
-            this.dataService.getBatteryData(this.username, this.pipelineId, this.selectedBattery, 'actual')
-        ];
-        forkJoin(observables).subscribe((responses: any[]) => {
-            this.sohData = responses[0].map((charge: any) => +charge.soh);
-            this.lastChargingCycle = this.sohData.length - 50;
-            this.futureSOHData = [this.sohData[this.sohData.length - 1], ...(responses[1] ? responses[1].map((charge: any) => +charge.soh) : [])];
-            this.streamingData = [this.sohData[this.sohData.length - 1], ...(responses[2] ? responses[2].map((charge: any) => +charge.soh) : [])];
-            this.annotationStart = this.sohData.length - 1;
-            this.setChartOption();
-            this.popIn();
-            const rulList = responses[0].map((charge: any) => +charge.rul);
-            this.forecastedSOH = Math.floor(this.futureSOHData[this.futureSOHData.length - 1]);
-            this.forecastedRUL = Math.floor(rulList[rulList.length - 1]);
-            this.forecastedStateOfCharge = this.battery.stateOfCharge;
-            const predicted = this.futureSOHData[this.futureSOHData.length - 1];
-            const actual = this.streamingData[this.streamingData.length - 1]
-            this.drift = (predicted - actual)*100/actual;
-            this.showSpinner = false;
-        });
+        // const observables = [
+        //     this.dataService.getBatteryData(this.username, this.pipelineId, this.selectedBattery, 'past'),
+        //     this.dataService.getBatteryData(this.username, this.pipelineId, this.selectedBattery, 'predictions'),
+        //     this.dataService.getBatteryData(this.username, this.pipelineId, this.selectedBattery, 'actual')
+        // ];
+        // forkJoin(observables).subscribe((responses: any[]) => {
+        //     this.sohData = responses[0].map((charge: any) => +charge.soh);
+        //     this.lastChargingCycle = this.sohData.length - 50;
+        //     this.futureSOHData = [this.sohData[this.sohData.length - 1], ...(responses[1] ? responses[1].map((charge: any) => +charge.soh) : [])];
+        //     this.streamingData = [this.sohData[this.sohData.length - 1], ...(responses[2] ? responses[2].map((charge: any) => +charge.soh) : [])];
+        //     this.annotationStart = this.sohData.length - 1;
+        //     this.setChartOption();
+        //     this.popIn();
+        //     const rulList = responses[0].map((charge: any) => +charge.rul);
+        //     this.forecastedSOH = Math.floor(this.futureSOHData[this.futureSOHData.length - 1]);
+        //     this.forecastedRUL = Math.floor(rulList[rulList.length - 1]);
+        //     this.forecastedStateOfCharge = this.battery.stateOfCharge;
+        //     const predicted = this.futureSOHData[this.futureSOHData.length - 1];
+        //     const actual = this.streamingData[this.streamingData.length - 1]
+        //     this.drift = (predicted - actual)*100/actual;
+        //     this.showSpinner = false;
+        // });
         this.linechartDark = null;
         this.forecastSOHData = [];
         this.stopStreaming();
